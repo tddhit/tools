@@ -16,19 +16,19 @@ const (
 )
 
 var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
-var logLevel = INFO
+var logLevel = DEBUG
 
-func InitLogger(logPath string) {
-	if logPath != "" {
-		file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE, 0666)
+func InitLogger(path string, level int) {
+	if path != "" {
+		file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE, 0666)
 		if err != nil {
-			Error("failed open file: %s, %s", logPath, err)
+			Error("failed open file: %s, %s", path, err)
 		} else {
 			logger = log.New(file, "", log.LstdFlags|log.Lshortfile)
 		}
 	}
-	if logLevel >= DEBUG && logLevel <= PANIC {
-		logLevel = logLevel
+	if level >= DEBUG && level <= PANIC {
+		logLevel = level
 	}
 }
 
