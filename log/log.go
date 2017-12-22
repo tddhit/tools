@@ -41,7 +41,7 @@ func Panicf(format string, v ...interface{}) {
 	}
 }
 
-func Panic(format string, v ...interface{}) {
+func Panic(v ...interface{}) {
 	if logLevel <= PANIC {
 		s := "[PANIC] " + fmt.Sprintln(v...)
 		logger.Output(2, s)
