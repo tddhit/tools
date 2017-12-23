@@ -18,7 +18,7 @@ const (
 var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 var logLevel = DEBUG
 
-func InitLogger(path string, level int) {
+func Init(path string, level int) {
 	if path != "" {
 		file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE, 0666)
 		if err != nil {
