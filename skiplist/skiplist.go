@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math/rand"
 	"time"
+	"unsafe"
 
 	"github.com/tddhit/tools/log"
 )
@@ -12,6 +13,7 @@ const MAXLEVEL = 32
 
 type SkipList struct {
 	level int
+	size  int
 	head  *Node
 }
 
@@ -32,6 +34,14 @@ func New() *SkipList {
 	}
 	rand.Seed(time.Now().UnixNano())
 	return sk
+}
+
+func (sk *SkipList) Iterator() *SKIterator {
+	ski := &SKIterator{
+		sk:   sk,
+		node: &Node{},
+	}
+	return ski
 }
 
 func (sk *SkipList) Show() {
@@ -55,6 +65,7 @@ func (sk *SkipList) Put(key, value []byte) {
 			if r == -1 {
 				break
 			} else if r == 0 {
+				sk.size = sk.size + len(value) - len(p.forward[i].value)
 				p.forward[i].value = value
 				return
 			} else if r == 1 {
@@ -79,6 +90,8 @@ func (sk *SkipList) Put(key, value []byte) {
 		node.forward[i] = update[i].forward[i]
 		update[i].forward[i] = node
 	}
+	sk.size += len(key) + len(value) + int(unsafe.Sizeof(*node))
+	sk.size += level * int(unsafe.Sizeof(node))
 }
 
 func (sk *SkipList) Get(key []byte) []byte {
@@ -117,10 +130,16 @@ func (sk *SkipList) Delete(key []byte) {
 		update[i] = p
 	}
 	if q != nil {
+		sk.size = sk.size - len(key) - len(p.value) - int(unsafe.Sizeof(*q))
+		sk.size = sk.size - int(unsafe.Sizeof(q))*len(q.forward)
 		for i := 0; i < len(q.forward); i++ {
 			update[i].forward[i] = q.forward[i]
 		}
 	}
+}
+
+func (sk *SkipList) Size() int {
+	return sk.size
 }
 
 func randomLevel() int {
@@ -131,4 +150,42 @@ func randomLevel() int {
 		}
 	}
 	return level
+}
+
+type SKIterator struct {
+	sk   *SkipList
+	node *Node
+}
+
+func (ski *SKIterator) First() {
+	if ski.sk != nil {
+		ski.node = ski.sk.head.forward[0]
+	}
+}
+
+func (ski *SKIterator) Next() {
+	if ski.node.forward != nil {
+		ski.node = ski.node.forward[0]
+	}
+}
+
+func (ski *SKIterator) HasNext() bool {
+	if ski.node != nil && ski.node.forward[0] != nil {
+		return true
+	}
+	return false
+}
+
+func (ski *SKIterator) Key() []byte {
+	if ski.node != nil {
+		return ski.node.key
+	}
+	return nil
+}
+
+func (ski *SKIterator) Value() []byte {
+	if ski.node != nil {
+		return ski.node.value
+	}
+	return nil
 }
