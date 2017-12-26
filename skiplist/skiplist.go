@@ -169,8 +169,8 @@ func (ski *SKIterator) Next() {
 	}
 }
 
-func (ski *SKIterator) HasNext() bool {
-	if ski.node != nil && ski.node.forward[0] != nil {
+func (ski *SKIterator) End() bool {
+	if ski.node == nil {
 		return true
 	}
 	return false

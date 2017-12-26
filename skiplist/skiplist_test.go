@@ -58,10 +58,7 @@ func TestSK(t *testing.T) {
 		}
 		var iter iterator.KVIterator
 		iter = sk.Iterator()
-		iter.First()
-		log.Debug(string(iter.Key()), string(iter.Value()))
-		for iter.HasNext() {
-			iter.Next()
+		for iter.First(); !iter.End(); iter.Next() {
 			log.Debug(string(iter.Key()), string(iter.Value()))
 		}
 	}
