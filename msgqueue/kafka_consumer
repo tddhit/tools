@@ -1,0 +1,47 @@
+package msgqueue
+
+import (
+	"time"
+
+	"github.com/tddhit/tools/log"
+
+	"github.com/Shopify/sarama"
+	"github.com/bsm/sarama-cluster"
+)
+
+type KafkaConsumer struct {
+	*cluster.Consumer
+	groupId string
+	brokers []string
+	topics  []string
+}
+
+func NewKafkaConsumer(groupId string, brokers []string, topics []string) *KafkaConsumer {
+	c := &KafkaConsumer{
+		groupId: groupId,
+		brokers: brokers,
+		topics:  topics,
+	}
+	config := cluster.NewConfig()
+	config.Group.Return.Notifications = true
+	config.Consumer.Return.Errors = true
+	config.Consumer.Offsets.CommitInterval = 1 * time.Second
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	consumer, err := cluster.NewConsumer(brokers, groupId, topics, config)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+	c.Consumer = consumer
+	go func() {
+		for err := range consumer.Errors() {
+			log.Error(err)
+		}
+	}()
+	go func() {
+		for ntf := range consumer.Notifications() {
+			log.Infof("Rebalanced: %+v\n", ntf)
+		}
+	}()
+	return c
+}

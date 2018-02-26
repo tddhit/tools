@@ -1,0 +1,9 @@
+package msgqueue
+
+import "testing"
+
+func TestProducer(t *testing.T) {
+	p := New([]string{"kafka1:9092"})
+	p.Send("topics_2", []byte("helloworld"))
+	select {}
+}

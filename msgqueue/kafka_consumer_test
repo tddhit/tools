@@ -1,0 +1,8 @@
+package msgqueue
+
+import "testing"
+
+func TestConsumer(t *testing.T) {
+	c := New("hbase_consumer", []string{"kafka1:9092"}, []string{"topics_2"})
+	c.Work()
+}

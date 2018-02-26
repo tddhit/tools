@@ -1,0 +1,45 @@
+package msgqueue
+
+import (
+	"github.com/Shopify/sarama"
+	"github.com/tddhit/tools/log"
+)
+
+type KafkaProducer struct {
+	sarama.AsyncProducer
+	successes int
+	errors    int
+	brokers   []string
+}
+
+func NewKafkaProducer(brokers []string) *KafkaProducer {
+	p := &KafkaProducer{
+		brokers: brokers,
+	}
+	config := sarama.NewConfig()
+	config.Producer.Return.Successes = true
+	producer, err := sarama.NewAsyncProducer(brokers, config)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+	p.AsyncProducer = producer
+	go func() {
+		for range producer.Successes() {
+			p.successes++
+		}
+	}()
+	go func() {
+		for err := range producer.Errors() {
+			log.Error(err)
+			p.errors++
+		}
+	}()
+	return p
+}
+
+func (p *KafkaProducer) Push(topic string, message []byte) {
+	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.ByteEncoder(message)}
+	p.Input() <- msg
+	log.Infof("type=msgqueue\ttopic=%s\tmsg=%s\n", topic, string(message))
+}

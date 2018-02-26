@@ -20,7 +20,7 @@ var logLevel = DEBUG
 
 func Init(path string, level int) {
 	if path != "" {
-		file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE, 0666)
+		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			Error("failed open file: %s, %s", path, err)
 		} else {

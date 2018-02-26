@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math/rand"
 	"time"
-	"unsafe"
 
 	"github.com/tddhit/tools/log"
 )
@@ -90,8 +89,7 @@ func (sk *SkipList) Put(key, value []byte) {
 		node.forward[i] = update[i].forward[i]
 		update[i].forward[i] = node
 	}
-	sk.size += len(key) + len(value) + int(unsafe.Sizeof(*node))
-	sk.size += level * int(unsafe.Sizeof(node))
+	sk.size += len(key) + len(value) + 8
 }
 
 func (sk *SkipList) Get(key []byte) []byte {
@@ -130,8 +128,7 @@ func (sk *SkipList) Delete(key []byte) {
 		update[i] = p
 	}
 	if q != nil {
-		sk.size = sk.size - len(key) - len(p.value) - int(unsafe.Sizeof(*q))
-		sk.size = sk.size - int(unsafe.Sizeof(q))*len(q.forward)
+		sk.size = sk.size - len(key) - len(p.value) - 8
 		for i := 0; i < len(q.forward); i++ {
 			update[i].forward[i] = q.forward[i]
 		}
