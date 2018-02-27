@@ -3,7 +3,6 @@ package consistent
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	//	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -54,39 +53,39 @@ func NewHashRing(rnodes []RNode, vprNum int) *HashRing {
 	return hashRing
 }
 
-func (this *HashRing) AddNode(rnode RNode) {
-	this.rnodes[rnode.Id] = rnode
-	this.adjust()
+func (h *HashRing) AddNode(rnode RNode) {
+	h.rnodes[rnode.Id] = rnode
+	h.adjust()
 }
 
-func (this *HashRing) RemoveNode(rnode RNode) {
-	delete(this.rnodes, rnode.Id)
-	this.adjust()
+func (h *HashRing) RemoveNode(rnode RNode) {
+	delete(h.rnodes, rnode.Id)
+	h.adjust()
 }
 
-func (this *HashRing) GetNode(key string) RNode {
+func (h *HashRing) GetNode(key string) RNode {
 	k := hash(key)
-	i := sort.Search(len(this.vnodes), func(i int) bool { return this.vnodes[i].key >= k })
-	if i == len(this.vnodes) {
+	i := sort.Search(len(h.vnodes), func(i int) bool { return h.vnodes[i].key >= k })
+	if i == len(h.vnodes) {
 		i = 0
 	}
-	return this.rnodes[this.vnodes[i].id]
+	return h.rnodes[h.vnodes[i].id]
 }
 
-func (this *HashRing) adjust() {
-	this.vnodes = make(iVNodeArray, 2*len(this.rnodes)*this.vprNum)
+func (h *HashRing) adjust() {
+	vnodesNum := len(h.rnodes) * h.vprNum
 	totalWeight := 0
-	for _, v := range this.rnodes {
+	for _, v := range h.rnodes {
 		totalWeight += v.Weight
 	}
-	for k, v := range this.rnodes {
-		j := int(math.Floor((float64(v.Weight) / float64(totalWeight)) * float64(len(this.rnodes)) * float64(this.vprNum)))
+	for k, v := range h.rnodes {
+		j := int(math.Floor((float64(v.Weight) / float64(totalWeight)) * float64(vnodesNum)))
 		for i := 0; i < j; i++ {
 			key := hash(k + "#" + strconv.Itoa(i))
-			this.vnodes = append(this.vnodes, iVNode{key, k})
+			h.vnodes = append(h.vnodes, iVNode{key, k})
 		}
 	}
-	this.vnodes.Sort()
+	h.vnodes.Sort()
 }
 
 func hash(key string) int {
