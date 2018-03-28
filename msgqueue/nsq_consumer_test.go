@@ -2,7 +2,9 @@ package msgqueue
 
 import (
 	"testing"
+	"time"
 
+	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/tddhit/tools/log"
 	"github.com/tddhit/tools/msgqueue/option"
 )
@@ -13,14 +15,25 @@ func do(body []byte) error {
 }
 
 func TestNsqConsumer(t *testing.T) {
-	conf := conf.Consumer{
-		Id:     "testConsumer",
-		Enable: true,
-		Addrs:  []string{"localhost:4150"},
-		Topic:  "testTopic",
+	cfg := etcd.Config{
+		Endpoints:   []string{"127.0.0.1:2379"},
+		DialTimeout: 2000 * time.Millisecond,
 	}
-	c := NewNsqConsumer(conf)
-	for msg := range c.Messages() {
-		log.Debug(msg)
+	etcdClient, err := etcd.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	opt := option.NsqConsumer{
+		Enable:   true,
+		Registry: "/nlpservice/nsqd",
+		Topics:   []string{"testTopic"},
+		Channel:  "wo",
+	}
+	c, err := NewNsqConsumer(etcdClient, opt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for msg := range c.Messages("testTopic") {
+		log.Debug(string(msg.Body))
 	}
 }

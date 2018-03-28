@@ -35,7 +35,7 @@ func NewNsqConsumer(etcdClient *etcd.Client, opt option.NsqConsumer) (c *NsqCons
 		}
 		c.msgChan[topic] = make(chan *Message, 1000)
 		consumer.AddHandler(&nsqHandler{c.msgChan[topic]})
-		if err = consumer.ConnectToNSQLookupds(addrs); err != nil {
+		if err = consumer.ConnectToNSQDs(addrs); err != nil {
 			log.Error(err)
 			return
 		}
