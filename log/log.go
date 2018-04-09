@@ -1,9 +1,12 @@
 package log
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"runtime"
+	"strconv"
 )
 
 const (
@@ -109,14 +112,23 @@ func Info(v ...interface{}) {
 
 func Debugf(format string, v ...interface{}) {
 	if logLevel <= DEBUG {
-		format = "[DEBUG] " + format
+		format = fmt.Sprintf("[DEBUG] GID(%d) ", gid()) + format
 		logger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 func Debug(v ...interface{}) {
 	if logLevel <= DEBUG {
-		s := "[DEBUG] " + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[DEBUG] GID(%d) ", gid()) + fmt.Sprintln(v...)
 		logger.Output(2, s)
 	}
+}
+
+func gid() uint64 {
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
 }

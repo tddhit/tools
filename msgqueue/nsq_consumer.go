@@ -4,8 +4,8 @@ import (
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/nsqio/go-nsq"
 
+	"github.com/tddhit/go-nsq"
 	"github.com/tddhit/tools/log"
 	"github.com/tddhit/tools/msgqueue/option"
 	"github.com/tddhit/wox/naming"
