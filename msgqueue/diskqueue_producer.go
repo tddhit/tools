@@ -1,47 +1,50 @@
 package msgqueue
 
 import (
+	"errors"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/tddhit/go-nsq"
 
+	diskqueue "github.com/tddhit/diskqueue/client"
 	"github.com/tddhit/tools/log"
 	"github.com/tddhit/tools/msgqueue/option"
 	"github.com/tddhit/wox/naming"
 )
 
-type NsqProducer struct {
-	producers     []*nsq.Producer
+var (
+	errUnavailableProducer = errors.New("Unavailable Producer")
+)
+
+type DQProducer struct {
+	producers     []*diskqueue.Producer
 	retryTimes    int
 	retryInterval time.Duration
 	counter       uint64
+	wg            sync.WaitGroup
 }
 
-func NewNsqProducer(client *etcd.Client, opt option.NsqProducer) (p *NsqProducer, err error) {
-	p = &NsqProducer{
+func NewDQProducer(client *etcd.Client, opt option.DQProducer) (p *DQProducer, err error) {
+	p = &DQProducer{
 		retryTimes:    opt.RetryTimes,
 		retryInterval: time.Duration(opt.RetryInterval) * time.Millisecond,
 	}
-	cfg := nsq.NewConfig()
 	r := &naming.Resolver{
 		Client:  client,
 		Timeout: 2 * time.Second,
 	}
 	addrs := r.Resolve(opt.Registry)
+	log.Debug(addrs)
 	for _, addr := range addrs {
-		var producer *nsq.Producer
-		if producer, err = nsq.NewProducer(addr, cfg); err != nil {
-			log.Error(err)
-			return
-		}
+		producer := diskqueue.NewProducer(addr)
 		p.producers = append(p.producers, producer)
 	}
 	return
 }
 
-func (p *NsqProducer) Publish(topic string, body []byte) (err error) {
+func (p *DQProducer) Publish(topic string, body []byte) (err error) {
 	if len(p.producers) == 0 {
 		err = errUnavailableProducer
 		return
@@ -53,18 +56,29 @@ func (p *NsqProducer) Publish(topic string, body []byte) (err error) {
 	if err = producer.Publish(topic, body); err != nil {
 		for retryTimes < p.retryTimes {
 			retryTimes++
-			if err = producer.DeferredPublish(topic, p.retryInterval, body); err != nil {
+			if err = producer.Publish(topic, body); err != nil {
 				continue
 			}
 			break
 		}
 		if err != nil {
-			log.Errorf("type=msgqueue\tvendor=nsq\taddr=%s\ttopic=%s\tmsg=%s\tretry=%d\terr=%s\n",
+			log.Errorf("type=msgqueue\tvendor=diskqueue\taddr=%s\ttopic=%s\tmsg=%s\tretry=%d\terr=%s\n",
 				producer, topic, string(body), retryTimes, err)
 			return
 		}
 	}
-	log.Infof("type=msgqueue\tvendor=nsq\taddr=%s\ttopic=%s\tmsg=%s\tretry=%d\n",
+	log.Infof("type=msgqueue\tvendor=diskqueue\taddr=%s\ttopic=%s\tmsg=%s\tretry=%d\n",
 		producer, topic, string(body), retryTimes)
 	return
+}
+
+func (p *DQProducer) Stop() {
+	for _, producer := range p.producers {
+		p.wg.Add(1)
+		go func() {
+			producer.Stop()
+			p.wg.Done()
+		}()
+	}
+	p.wg.Wait()
 }
