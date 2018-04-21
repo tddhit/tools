@@ -27,7 +27,7 @@ func Init(path string, level int) {
 		if err != nil {
 			Error("failed open file: %s, %s", path, err)
 		} else {
-			logger = log.New(file, "", log.LstdFlags|log.Lshortfile)
+			logger = log.New(file, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds)
 		}
 	}
 	if level >= DEBUG && level <= PANIC {

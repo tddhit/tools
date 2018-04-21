@@ -9,11 +9,6 @@ import (
 	"github.com/tddhit/tools/msgqueue/option"
 )
 
-func do(body []byte) error {
-	log.Debug(string(body))
-	return nil
-}
-
 func TestDQConsumer(t *testing.T) {
 	log.Init("consumer.log", log.DEBUG)
 	cfg := etcd.Config{
@@ -28,7 +23,7 @@ func TestDQConsumer(t *testing.T) {
 		Enable:   true,
 		Registry: "/nlpservice/diskqueue",
 		Topic:    "topic1",
-		Channel:  "wo2",
+		Channel:  "wo",
 	}
 	c, err := NewDQConsumer(etcdClient, opt, "0")
 	if err != nil {
@@ -36,6 +31,7 @@ func TestDQConsumer(t *testing.T) {
 	}
 	for {
 		msg := c.Pull()
+		//time.Sleep(100 * time.Millisecond)
 		log.Debug(string(msg))
 	}
 }
