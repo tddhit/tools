@@ -26,6 +26,7 @@ func NewNsqConsumer(etcdClient *etcd.Client, opt option.NsqConsumer) (c *NsqCons
 		Timeout: 2 * time.Second,
 	}
 	addrs := r.Resolve(opt.Registry)
+	log.Info(addrs)
 	cfg := nsq.NewConfig()
 	for _, topic := range opt.Topics {
 		var consumer *nsq.Consumer
@@ -35,7 +36,7 @@ func NewNsqConsumer(etcdClient *etcd.Client, opt option.NsqConsumer) (c *NsqCons
 		}
 		c.msgChan[topic] = make(chan *Message, 1000)
 		consumer.AddHandler(&nsqHandler{c.msgChan[topic]})
-		if err = consumer.ConnectToNSQDs(addrs); err != nil {
+		if err = consumer.ConnectToNSQLookupds(addrs); err != nil {
 			log.Error(err)
 			return
 		}

@@ -16,7 +16,7 @@ func do(body []byte) error {
 
 func TestNsqConsumer(t *testing.T) {
 	cfg := etcd.Config{
-		Endpoints:   []string{"127.0.0.1:2379"},
+		Endpoints:   []string{"172.17.32.101:2379"},
 		DialTimeout: 2000 * time.Millisecond,
 	}
 	etcdClient, err := etcd.New(cfg)
@@ -25,7 +25,7 @@ func TestNsqConsumer(t *testing.T) {
 	}
 	opt := option.NsqConsumer{
 		Enable:   true,
-		Registry: "/nlpservice/nsqd",
+		Registry: "/nlpservice/nsqlookupd",
 		Topics:   []string{"testTopic"},
 		Channel:  "wo",
 	}
