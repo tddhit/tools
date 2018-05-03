@@ -22,9 +22,11 @@ func NewDQConsumer(etcdClient *etcd.Client, opt option.DQConsumer, msgid string)
 	}
 	addrs := r.Resolve(opt.Registry)
 	consumer := diskqueue.NewConsumer(opt.Topic, opt.Channel)
-	err = consumer.Connect(msgid, addrs...)
-	if err != nil {
-		return nil, err
+	for _, addr := range addrs {
+		err = consumer.Connect(addr, msgid)
+		if err != nil {
+			return nil, err
+		}
 	}
 	c.Consumer = consumer
 	return c, nil
