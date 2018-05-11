@@ -1,6 +1,7 @@
 package msgqueue
 
 import (
+	"errors"
 	"sync/atomic"
 	"time"
 
@@ -43,7 +44,7 @@ func NewNsqProducer(client *etcd.Client, opt option.NsqProducer) (p *NsqProducer
 
 func (p *NsqProducer) Publish(topic string, body []byte) (err error) {
 	if len(p.producers) == 0 {
-		err = errUnavailableProducer
+		err = errors.New("no avaliable producer")
 		return
 	}
 	counter := atomic.AddUint64(&p.counter, 1)
