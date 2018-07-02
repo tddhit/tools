@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	DEBUG = 1 + iota
+	TRACE = 1 + iota
+	DEBUG
 	INFO
 	WARNING
 	ERROR
@@ -19,10 +20,12 @@ const (
 )
 
 var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
-var logLevel = DEBUG
+var logLevel = TRACE
+var logPath string
 
 func Init(path string, level int) {
 	if path != "" {
+		logPath = path
 		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			Error("failed open file: %s, %s", path, err)
@@ -33,6 +36,10 @@ func Init(path string, level int) {
 	if level >= DEBUG && level <= PANIC {
 		logLevel = level
 	}
+}
+
+func Reopen() {
+	Init(logPath, logLevel)
 }
 
 func Panicf(format string, v ...interface{}) {
@@ -121,6 +128,13 @@ func Debug(v ...interface{}) {
 	if logLevel <= DEBUG {
 		s := fmt.Sprintf("[DEBUG] GID(%d) ", gid()) + fmt.Sprintln(v...)
 		logger.Output(2, s)
+	}
+}
+
+func Tracef(format string, v ...interface{}) {
+	if logLevel <= TRACE {
+		format = fmt.Sprintf("[Trace] GID(%d) ", gid()) + format
+		logger.Output(3, fmt.Sprintf(format, v...))
 	}
 }
 
