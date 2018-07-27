@@ -19,7 +19,8 @@ const (
 	PANIC
 )
 
-var logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
+var flag = log.LstdFlags | log.Lshortfile | log.Lmicroseconds
+var logger = log.New(os.Stderr, "", flag)
 var logLevel = TRACE
 var logPath string
 
@@ -30,7 +31,7 @@ func Init(path string, level int) {
 		if err != nil {
 			Error("failed open file: %s, %s", path, err)
 		} else {
-			logger = log.New(file, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds)
+			logger = log.New(file, "", flag)
 		}
 	}
 	if level >= DEBUG && level <= PANIC {
