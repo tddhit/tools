@@ -1,12 +1,11 @@
 package log
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
-	"runtime"
-	"strconv"
+
+	"github.com/tddhit/tools/goid"
 )
 
 const (
@@ -120,30 +119,28 @@ func Info(v ...interface{}) {
 
 func Debugf(format string, v ...interface{}) {
 	if logLevel <= DEBUG {
-		format = fmt.Sprintf("[DEBUG] GID(%d) ", gid()) + format
+		format = fmt.Sprintf("[DEBUG] GID(%d) ", goid.Get()) + format
 		logger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 func Debug(v ...interface{}) {
 	if logLevel <= DEBUG {
-		s := fmt.Sprintf("[DEBUG] GID(%d) ", gid()) + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[DEBUG] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
 		logger.Output(2, s)
 	}
 }
 
-func Tracef(format string, v ...interface{}) {
+func Tracef(calldepth int, format string, v ...interface{}) {
 	if logLevel <= TRACE {
-		format = fmt.Sprintf("[Trace] GID(%d) ", gid()) + format
-		logger.Output(3, fmt.Sprintf(format, v...))
+		format = fmt.Sprintf("[Trace] GID(%d) ", goid.Get()) + format
+		logger.Output(calldepth, fmt.Sprintf(format, v...))
 	}
 }
 
-func gid() uint64 {
-	b := make([]byte, 64)
-	b = b[:runtime.Stack(b, false)]
-	b = bytes.TrimPrefix(b, []byte("goroutine "))
-	b = b[:bytes.IndexByte(b, ' ')]
-	n, _ := strconv.ParseUint(string(b), 10, 64)
-	return n
+func Trace(calldepth int, v ...interface{}) {
+	if logLevel <= TRACE {
+		s := fmt.Sprintf("[Trace] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
+		logger.Output(calldepth, s)
+	}
 }
