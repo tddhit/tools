@@ -18,6 +18,12 @@ const (
 	ALLOCSIZE = 1 << 24 // 16M
 )
 
+const (
+	RANDOM = iota
+	SEQUENTIAL
+	WILLNEED
+)
+
 type MmapFile struct {
 	*os.File
 	buf       []byte
@@ -25,7 +31,7 @@ type MmapFile struct {
 	maxBufOff int64
 }
 
-func New(path string, size, mode int) (*MmapFile, error) {
+func New(path string, size, mode, advise int) (*MmapFile, error) {
 	var (
 		flag      int
 		prot      int
@@ -43,6 +49,15 @@ func New(path string, size, mode int) (*MmapFile, error) {
 		flag = os.O_CREATE | os.O_RDWR | os.O_APPEND
 		prot = syscall.PROT_READ | syscall.PROT_WRITE
 	}
+	switch advise {
+	case RANDOM:
+		advise = syscall.MADV_RANDOM
+	case SEQUENTIAL:
+		advise = syscall.MADV_SEQUENTIAL
+	case WILLNEED:
+		advise = syscall.MADV_WILLNEED
+	}
+
 	file, err := os.OpenFile(path, flag, 0644)
 	if err != nil {
 		return nil, err
@@ -57,6 +72,12 @@ func New(path string, size, mode int) (*MmapFile, error) {
 	buf, err := syscall.Mmap(int(file.Fd()), 0, size,
 		prot, syscall.MAP_SHARED)
 	if err != nil {
+		return nil, err
+	}
+	if _, _, err := syscall.Syscall(syscall.SYS_MADVISE,
+		uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)),
+		uintptr(advise)); err != 0 {
+
 		return nil, err
 	}
 	return &MmapFile{
@@ -77,6 +98,10 @@ func (m *MmapFile) WriteAt(b []byte, off int64) error {
 	}
 	copy(m.buf[off:off+int64(len(b))], b)
 	return nil
+}
+
+func (m *MmapFile) ReadAt(off, n int64) []byte {
+	return m.buf[off : off+n]
 }
 
 func (m *MmapFile) PutUint32At(off int64, v uint32) error {
