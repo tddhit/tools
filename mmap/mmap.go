@@ -100,6 +100,16 @@ func (m *MmapFile) WriteAt(b []byte, off int64) error {
 	return nil
 }
 
+func (m *MmapFile) OrAt(b []byte, off int64) error {
+	if err := m.tryGrow(off, len(b)); err != nil {
+		return err
+	}
+	for i := range b {
+		m.buf[off+int64(i)] |= b[int64(i)]
+	}
+	return nil
+}
+
 func (m *MmapFile) ReadAt(off, n int64) []byte {
 	return m.buf[off : off+n]
 }
@@ -121,7 +131,7 @@ func (m *MmapFile) PutUint64At(off int64, v uint64) error {
 }
 
 func (m *MmapFile) tryGrow(off int64, n int) error {
-	if off+int64(n) >= m.fileSize {
+	for off+int64(n) >= m.fileSize {
 		err := syscall.Ftruncate(int(m.File.Fd()), m.fileSize+ALLOCSIZE)
 		if err != nil {
 			log.Error(err)
