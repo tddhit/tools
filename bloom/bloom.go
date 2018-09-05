@@ -2,10 +2,12 @@ package bloom
 
 import (
 	"math"
+	"os"
 	"sync"
 
 	"github.com/spaolacci/murmur3"
 
+	"github.com/tddhit/tools/log"
 	"github.com/tddhit/tools/mmap"
 )
 
@@ -77,7 +79,10 @@ func (b *Bloom) MayContain(key []byte) bool {
 		bitPos := h % uint64(b.m)
 		if b.file != nil {
 			off := int64(bitPos / 8)
-			buf := b.file.ReadAt(off, 1)
+			buf, err := b.file.ReadAt(off, 1)
+			if err != nil {
+				log.Fatal(err)
+			}
 			if buf[0]&(1<<(bitPos%8)) == 0 {
 				return false
 			}
@@ -89,6 +94,36 @@ func (b *Bloom) MayContain(key []byte) bool {
 		h += delta
 	}
 	return true
+}
+
+func (b *Bloom) Sync() error {
+	if b.file != nil {
+		return b.file.Sync()
+	}
+	return nil
+}
+
+func (b *Bloom) Close() error {
+	if b.file != nil {
+		if err := b.file.Close(); err != nil {
+			return err
+		}
+		b.file = nil
+	}
+	return nil
+}
+
+func (b *Bloom) Delete() error {
+	if b.file != nil {
+		if err := b.Close(); err != nil {
+			return err
+		}
+		if err := os.Remove(b.opts.file); err != nil {
+			return err
+		}
+		b.file = nil
+	}
+	return nil
 }
 
 func EstimateParameters(n int, p float64) (m int64, k int) {

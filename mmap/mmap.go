@@ -27,11 +27,12 @@ const (
 type MmapFile struct {
 	*os.File
 	buf       []byte
+	maxSize   int64
 	fileSize  int64
 	maxBufOff int64
 }
 
-func New(path string, size, mode, advise int) (*MmapFile, error) {
+func New(path string, size int64, mode, advise int) (*MmapFile, error) {
 	var (
 		flag      int
 		prot      int
@@ -69,7 +70,7 @@ func New(path string, size, mode, advise int) (*MmapFile, error) {
 	if err = flock(int(file.Fd()), exclusive); err != nil {
 		return nil, err
 	}
-	buf, err := syscall.Mmap(int(file.Fd()), 0, size,
+	buf, err := syscall.Mmap(int(file.Fd()), 0, int(size),
 		prot, syscall.MAP_SHARED)
 	if err != nil {
 		return nil, err
@@ -83,6 +84,7 @@ func New(path string, size, mode, advise int) (*MmapFile, error) {
 	return &MmapFile{
 		File:      file,
 		buf:       buf,
+		maxSize:   size,
 		fileSize:  info.Size(),
 		maxBufOff: info.Size(),
 	}, nil
@@ -93,7 +95,7 @@ func (m *MmapFile) Size() int64 {
 }
 
 func (m *MmapFile) WriteAt(b []byte, off int64) error {
-	if err := m.tryGrow(off, len(b)); err != nil {
+	if err := m.tryGrow(off, int64(len(b))); err != nil {
 		return err
 	}
 	copy(m.buf[off:off+int64(len(b))], b)
@@ -101,7 +103,7 @@ func (m *MmapFile) WriteAt(b []byte, off int64) error {
 }
 
 func (m *MmapFile) OrAt(b []byte, off int64) error {
-	if err := m.tryGrow(off, len(b)); err != nil {
+	if err := m.tryGrow(off, int64(len(b))); err != nil {
 		return err
 	}
 	for i := range b {
@@ -110,8 +112,11 @@ func (m *MmapFile) OrAt(b []byte, off int64) error {
 	return nil
 }
 
-func (m *MmapFile) ReadAt(off, n int64) []byte {
-	return m.buf[off : off+n]
+func (m *MmapFile) ReadAt(off, n int64) ([]byte, error) {
+	if err := m.tryGrow(off, n); err != nil {
+		return nil, err
+	}
+	return m.buf[off : off+n], nil
 }
 
 func (m *MmapFile) PutUint32At(off int64, v uint32) error {
@@ -130,8 +135,11 @@ func (m *MmapFile) PutUint64At(off int64, v uint64) error {
 	return nil
 }
 
-func (m *MmapFile) tryGrow(off int64, n int) error {
-	for off+int64(n) >= m.fileSize {
+func (m *MmapFile) tryGrow(off, n int64) error {
+	if off+n > m.maxSize {
+		return errors.New("oversize")
+	}
+	for off+n >= m.fileSize {
 		err := syscall.Ftruncate(int(m.File.Fd()), m.fileSize+ALLOCSIZE)
 		if err != nil {
 			log.Error(err)
@@ -139,18 +147,24 @@ func (m *MmapFile) tryGrow(off int64, n int) error {
 		}
 		m.fileSize += ALLOCSIZE
 	}
-	if off+int64(n) > m.maxBufOff {
+	if off+n > m.maxBufOff {
 		m.maxBufOff = off + int64(n)
 	}
 	return nil
 }
 
-func (m *MmapFile) Uint64At(off int64) uint64 {
-	return binary.LittleEndian.Uint64(m.buf[off : off+8])
+func (m *MmapFile) Uint64At(off int64) (uint64, error) {
+	if err := m.tryGrow(off, 8); err != nil {
+		return 0, err
+	}
+	return binary.LittleEndian.Uint64(m.buf[off : off+8]), nil
 }
 
-func (m *MmapFile) Uint32At(off int64) uint32 {
-	return binary.LittleEndian.Uint32(m.buf[off : off+8])
+func (m *MmapFile) Uint32At(off int64) (uint32, error) {
+	if err := m.tryGrow(off, 4); err != nil {
+		return 0, err
+	}
+	return binary.LittleEndian.Uint32(m.buf[off : off+8]), nil
 }
 
 func (m *MmapFile) Buf(off int64) unsafe.Pointer {
