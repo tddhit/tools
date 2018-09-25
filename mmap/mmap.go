@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"os"
+	"sync"
 	"syscall"
 	"unsafe"
 
@@ -25,6 +26,7 @@ const (
 )
 
 type MmapFile struct {
+	sync.RWMutex
 	*os.File
 	buf       []byte
 	maxSize   int64
@@ -139,6 +141,8 @@ func (m *MmapFile) tryGrow(off, n int64) error {
 	if off+n > m.maxSize {
 		return errors.New("oversize")
 	}
+	m.Lock()
+	defer m.Unlock()
 	for off+n >= m.fileSize {
 		err := syscall.Ftruncate(int(m.File.Fd()), m.fileSize+ALLOCSIZE)
 		if err != nil {
