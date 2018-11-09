@@ -12,17 +12,19 @@ import (
 )
 
 const (
-	RDONLY = iota
-	CREATE
-	APPEND
-
-	ALLOCSIZE = 1 << 24 // 16M
+	MODE_RDONLY = iota
+	MODE_CREATE
+	MODE_APPEND
 )
 
 const (
-	RANDOM = iota
-	SEQUENTIAL
-	WILLNEED
+	ADVISE_RANDOM = iota
+	ADVISE_SEQUENTIAL
+	ADVISE_WILLNEED
+)
+
+const (
+	ALLOCSIZE = 1 << 24 // 16M
 )
 
 type MmapFile struct {
@@ -41,23 +43,23 @@ func New(path string, size int64, mode, advise int) (*MmapFile, error) {
 		exclusive bool = true
 	)
 	switch mode {
-	case RDONLY:
+	case MODE_RDONLY:
 		flag = os.O_RDONLY
 		prot = syscall.PROT_READ
 		exclusive = false
-	case CREATE:
+	case MODE_CREATE:
 		flag = os.O_CREATE | os.O_RDWR | os.O_TRUNC
 		prot = syscall.PROT_READ | syscall.PROT_WRITE
-	case APPEND:
+	case MODE_APPEND:
 		flag = os.O_CREATE | os.O_RDWR | os.O_APPEND
 		prot = syscall.PROT_READ | syscall.PROT_WRITE
 	}
 	switch advise {
-	case RANDOM:
+	case ADVISE_RANDOM:
 		advise = syscall.MADV_RANDOM
-	case SEQUENTIAL:
+	case ADVISE_SEQUENTIAL:
 		advise = syscall.MADV_SEQUENTIAL
-	case WILLNEED:
+	case ADVISE_WILLNEED:
 		advise = syscall.MADV_WILLNEED
 	}
 
