@@ -34,6 +34,7 @@ type MmapFile struct {
 	maxSize   int64
 	fileSize  int64
 	maxBufOff int64
+	mode      int
 }
 
 func New(path string, size int64, mode, advise int) (*MmapFile, error) {
@@ -91,6 +92,7 @@ func New(path string, size int64, mode, advise int) (*MmapFile, error) {
 		maxSize:   size,
 		fileSize:  info.Size(),
 		maxBufOff: info.Size(),
+		mode:      mode,
 	}, nil
 }
 
@@ -99,6 +101,9 @@ func (m *MmapFile) Size() int64 {
 }
 
 func (m *MmapFile) WriteAt(b []byte, off int64) error {
+	if m.mode == MODE_RDONLY {
+		return errors.New("readonly")
+	}
 	if err := m.tryGrow(off, int64(len(b))); err != nil {
 		return err
 	}
@@ -107,6 +112,9 @@ func (m *MmapFile) WriteAt(b []byte, off int64) error {
 }
 
 func (m *MmapFile) OrAt(b []byte, off int64) error {
+	if m.mode == MODE_RDONLY {
+		return errors.New("readonly")
+	}
 	if err := m.tryGrow(off, int64(len(b))); err != nil {
 		return err
 	}
@@ -124,6 +132,9 @@ func (m *MmapFile) ReadAt(off, n int64) ([]byte, error) {
 }
 
 func (m *MmapFile) PutUint32At(off int64, v uint32) error {
+	if m.mode == MODE_RDONLY {
+		return errors.New("readonly")
+	}
 	if err := m.tryGrow(off, 4); err != nil {
 		return err
 	}
@@ -132,6 +143,9 @@ func (m *MmapFile) PutUint32At(off int64, v uint32) error {
 }
 
 func (m *MmapFile) PutUint64At(off int64, v uint64) error {
+	if m.mode == MODE_RDONLY {
+		return errors.New("readonly")
+	}
 	if err := m.tryGrow(off, 8); err != nil {
 		return err
 	}
@@ -145,7 +159,8 @@ func (m *MmapFile) tryGrow(off, n int64) error {
 	}
 	m.Lock()
 	defer m.Unlock()
-	for off+n >= m.fileSize {
+	for off+n > m.fileSize {
+		log.Trace(2, m.File.Fd(), m.fileSize, ALLOCSIZE, off, n)
 		err := syscall.Ftruncate(int(m.File.Fd()), m.fileSize+ALLOCSIZE)
 		if err != nil {
 			log.Error(err)
@@ -160,16 +175,10 @@ func (m *MmapFile) tryGrow(off, n int64) error {
 }
 
 func (m *MmapFile) Uint64At(off int64) (uint64, error) {
-	if err := m.tryGrow(off, 8); err != nil {
-		return 0, err
-	}
 	return binary.LittleEndian.Uint64(m.buf[off : off+8]), nil
 }
 
 func (m *MmapFile) Uint32At(off int64) (uint32, error) {
-	if err := m.tryGrow(off, 4); err != nil {
-		return 0, err
-	}
 	return binary.LittleEndian.Uint32(m.buf[off : off+8]), nil
 }
 
@@ -177,7 +186,10 @@ func (m *MmapFile) Buf(off int64) unsafe.Pointer {
 	return unsafe.Pointer(&m.buf[off])
 }
 
-func (m *MmapFile) Close() error {
+func (m *MmapFile) Compact() error {
+	if m.mode == MODE_RDONLY {
+		return errors.New("readonly")
+	}
 	if m.buf == nil || m.File == nil {
 		return errors.New("buf/file is nil.")
 	}
@@ -185,11 +197,29 @@ func (m *MmapFile) Close() error {
 		log.Error(err)
 		return err
 	}
-	if err := syscall.Munmap(m.buf); err != nil {
+	if err := m.File.Sync(); err != nil {
 		log.Error(err)
 		return err
 	}
-	if err := m.File.Sync(); err != nil {
+	m.fileSize = m.maxBufOff
+	return nil
+}
+
+func (m *MmapFile) Close() error {
+	if m.buf == nil || m.File == nil {
+		return errors.New("buf/file is nil.")
+	}
+	if m.mode != MODE_RDONLY {
+		if err := syscall.Ftruncate(int(m.File.Fd()), m.maxBufOff); err != nil {
+			log.Error(err)
+			return err
+		}
+		if err := m.File.Sync(); err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+	if err := syscall.Munmap(m.buf); err != nil {
 		log.Error(err)
 		return err
 	}
