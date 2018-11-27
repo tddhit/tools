@@ -63,3 +63,82 @@ func BubbleSort(data []int) {
 		}
 	}
 }
+
+func ShellSort(data []int) {
+	for gap := len(data) / 2; gap > 0; gap /= 2 {
+		for i := gap; i < len(data); i++ {
+			j := i
+			for j-gap >= 0 && data[j] < data[j-gap] {
+				data[j], data[j-gap] = data[j-gap], data[j]
+				j -= gap
+			}
+		}
+	}
+}
+
+func HeapSort(data []int) {
+	buildHeap(data)
+	for i := len(data) - 1; i > 0; i-- {
+		data[0], data[i] = data[i], data[0]
+		adjustHeap(data, 0, i-1)
+	}
+}
+
+func buildHeap(data []int) {
+	for i := len(data)/2 - 1; i >= 0; i-- {
+		adjustHeap(data, i, len(data)-1)
+	}
+}
+
+func adjustHeap(data []int, s, n int) {
+	max := s
+	if 2*s <= n {
+		if data[2*s] > data[max] {
+			max = 2 * s
+		}
+	}
+	if 2*s+1 <= n {
+		if data[2*s+1] > data[max] {
+			max = 2*s + 1
+		}
+	}
+	if max != s {
+		data[s], data[max] = data[max], data[s]
+		adjustHeap(data, max, n)
+	}
+}
+
+func MergeSort(data []int) {
+	if len(data) < 2 {
+		return
+	}
+	res := mergeSort(data)
+	copy(data, res)
+}
+
+func mergeSort(data []int) []int {
+	if len(data) < 2 {
+		return data
+	}
+	m := len(data) / 2
+	left := mergeSort(data[:m])
+	right := mergeSort(data[m:])
+	res := mergeTwo(left, right)
+	return res
+}
+
+func mergeTwo(left, right []int) (res []int) {
+	l, r := 0, 0
+	for l < len(left) && r < len(right) {
+		if left[l] < right[r] {
+			res = append(res, left[l])
+			l++
+		} else {
+			res = append(res, right[r])
+			r++
+		}
+	}
+	res = append(res, left[l:]...)
+	res = append(res, right[r:]...)
+	return
+}

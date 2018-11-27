@@ -160,7 +160,6 @@ func (m *MmapFile) tryGrow(off, n int64) error {
 	m.Lock()
 	defer m.Unlock()
 	for off+n > m.fileSize {
-		log.Trace(2, m.File.Fd(), m.fileSize, ALLOCSIZE, off, n)
 		err := syscall.Ftruncate(int(m.File.Fd()), m.fileSize+ALLOCSIZE)
 		if err != nil {
 			log.Error(err)

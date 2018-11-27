@@ -70,5 +70,20 @@ func TestSort(t *testing.T) {
 	BubbleSort(data)
 	assert(equal(orig, data), "bubble sort not equal")
 
+	data = shuffle(orig)
+	assert(!equal(orig, data), "shuffle equal")
+	ShellSort(data)
+	assert(equal(orig, data), "shell sort not equal")
+
+	data = shuffle(orig)
+	assert(!equal(orig, data), "shuffle equal")
+	HeapSort(data)
+	assert(equal(orig, data), "heap sort not equal")
+
+	data = shuffle(orig)
+	assert(!equal(orig, data), "shuffle equal")
+	MergeSort(data)
+	assert(equal(orig, data), "merge sort not equal")
+
 	assert(!equal([]int{}, nil), "nil/empty equal")
 }
