@@ -92,14 +92,14 @@ func buildHeap(data []int) {
 
 func adjustHeap(data []int, s, n int) {
 	max := s
-	if 2*s <= n {
-		if data[2*s] > data[max] {
-			max = 2 * s
-		}
-	}
 	if 2*s+1 <= n {
 		if data[2*s+1] > data[max] {
 			max = 2*s + 1
+		}
+	}
+	if 2*s+2 <= n {
+		if data[2*s+2] > data[max] {
+			max = 2*s + 2
 		}
 	}
 	if max != s {
