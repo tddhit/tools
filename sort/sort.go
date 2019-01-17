@@ -142,3 +142,18 @@ func mergeTwo(left, right []int) (res []int) {
 	res = append(res, right[r:]...)
 	return
 }
+
+func BinarySearch(data []int, target int) int {
+	low, high := 0, len(data)-1
+	for low <= high {
+		mid := low + (high-low)/2
+		if data[mid] == target {
+			return mid
+		} else if data[mid] < target {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+	return -1
+}

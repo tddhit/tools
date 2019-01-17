@@ -39,7 +39,7 @@ func New(n int, FP float64, opts ...Option) (*Bloom, error) {
 		k:    k,
 	}
 	if b.opts.file != "" && b.opts.maxSize > 0 {
-		f, err := mmap.New(b.opts.file, b.opts.maxSize, mmap.CREATE, mmap.RANDOM)
+		f, err := mmap.New(b.opts.file, b.opts.maxSize, mmap.MODE_CREATE, mmap.ADVISE_RANDOM)
 		if err != nil {
 			return nil, err
 		}
