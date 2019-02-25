@@ -105,14 +105,14 @@ func Warn(v ...interface{}) {
 
 func Infof(format string, v ...interface{}) {
 	if logLevel <= INFO {
-		format = "[INFO] " + format
+		format = fmt.Sprintf("[INFO] GID(%d) ", goid.Get()) + format
 		logger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 func Info(v ...interface{}) {
 	if logLevel <= INFO {
-		s := "[INFO] " + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[INFO] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
 		logger.Output(2, s)
 	}
 }
