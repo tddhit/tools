@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/tddhit/tools/goid"
+	//"github.com/tddhit/tools/goid"
 )
 
 const (
@@ -105,42 +104,42 @@ func Warn(v ...interface{}) {
 
 func Infof(format string, v ...interface{}) {
 	if logLevel <= INFO {
-		format = fmt.Sprintf("[INFO] GID(%d) ", goid.Get()) + format
+		format = fmt.Sprintf("[INFO] GID(%d) ", 0) + format
 		logger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 func Info(v ...interface{}) {
 	if logLevel <= INFO {
-		s := fmt.Sprintf("[INFO] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[INFO] GID(%d) ", 0) + fmt.Sprintln(v...)
 		logger.Output(2, s)
 	}
 }
 
 func Debugf(format string, v ...interface{}) {
 	if logLevel <= DEBUG {
-		format = fmt.Sprintf("[DEBUG] GID(%d) ", goid.Get()) + format
+		format = fmt.Sprintf("[DEBUG] GID(%d) ", 0) + format
 		logger.Output(2, fmt.Sprintf(format, v...))
 	}
 }
 
 func Debug(v ...interface{}) {
 	if logLevel <= DEBUG {
-		s := fmt.Sprintf("[DEBUG] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[DEBUG] GID(%d) ", 0) + fmt.Sprintln(v...)
 		logger.Output(2, s)
 	}
 }
 
 func Tracef(calldepth int, format string, v ...interface{}) {
 	if logLevel <= TRACE {
-		format = fmt.Sprintf("[Trace] GID(%d) ", goid.Get()) + format
+		format = fmt.Sprintf("[Trace] GID(%d) ", 0) + format
 		logger.Output(calldepth, fmt.Sprintf(format, v...))
 	}
 }
 
 func Trace(calldepth int, v ...interface{}) {
 	if logLevel <= TRACE {
-		s := fmt.Sprintf("[Trace] GID(%d) ", goid.Get()) + fmt.Sprintln(v...)
+		s := fmt.Sprintf("[Trace] GID(%d) ", 0) + fmt.Sprintln(v...)
 		logger.Output(calldepth, s)
 	}
 }
